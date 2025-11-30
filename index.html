@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCA 蛋白质浓度计算器 & 上样助手</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .lab-info {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        .header-placeholder {
+            text-align: center;
+            font-size: 4em;
+            margin: 15px 0;
+            color: #007bff;
+        }
+        h2 {
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            color: #555;
+        }
+        .input-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-box {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px; 
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .conc-list {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 20px;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .control-panel > div {
+            padding: 5px 0;
+        }
+        .control-panel label {
+            font-weight: bold;
+        }
+
+        button#calculateBtn {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button#calculateBtn:hover {
+            background-color: #218838;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+        }
+        .results h3 {
+            color: #007bff;
+        }
+        .results-placeholder {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: #555;
+        }
+        #sampleResultsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        #sampleResultsTable th, #sampleResultsTable td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        #sampleResultsTable th {
+            background-color: #d8e5f2;
+            color: #333;
+        }
+        .warning {
+            color: red;
+            font-weight: bold;
+        }
+        .r-squared {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔬 BCA 蛋白质浓度计算器 & 上样助手</h1>
+    <p class="lab-info">Lu Lab WQM 制作</p>
+    
+    <div class="header-placeholder">🧪🌡️📊</div>
+    
+
+    <h2>1. 标准曲线数据输入</h2>
+    <div class="input-section">
+        <div class="input-box">
+            <h3>标准品浓度 (mg/mL)</h3>
+            <p>预设 8 个浓度，**请勿修改**：</p>
+            <div id="standardConcs" class="conc-list">
+                0.0, 0.125, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0
+            </div>
+        </div>
+        
+        <div class="input-box">
+            <h3>标准品 OD 值 (562 nm)</h3>
+            <p>请粘贴 8 个 OD 值 (横排/逗号/空格分隔)：</p>
+            <textarea id="standardOdTextarea" placeholder="例如: 0.1938, 0.234, 0.2864, 0.3883, 0.4913, 0.5838, 0.754, 0.9547"></textarea>
+        </div>
+    </div>
+
+    <h2>2. 样品上样配方设置</h2>
+    <div class="control-panel">
+        <div>
+            <label for="dilutionFactor">样品稀释倍数:</label>
+            <input type="number" step="1" id="dilutionFactor" value="1" style="width: 100%; padding: 8px;">
+        </div>
+        <div>
+            <label for="targetLoadAmount">目标上样量 (μg):</label>
+            <input type="number" step="1" id="targetLoadAmount" value="20" style="width: 100%; padding: 8px;">
+        </div>
+        <div>
+            <label for="proteinRecipeVolume">蛋白配方体积 (μL):</label>
+            <input type="number" step="1" id="proteinRecipeVolume" value="40" style="width: 100%; padding: 8px;">
+        </div>
+        <div>
+            <label for="lbRecipeVolume">Loading Buffer 体积 (μL):</label>
+            <input type="number" step="1" id="lbRecipeVolume" value="10" style="width: 100%; padding: 8px;">
+        </div>
+    </div>
+    
+    <div class="input-box">
+        <label for="sampleOdTextarea">待测样品 OD 值:</label>
+        <p>请粘贴**多行**待测样品的 OD 值 (横排/逗号/空格/换行分隔)：</p>
+        <textarea id="sampleOdTextarea" placeholder="例如: 0.373, 0.501, 0.812, 0.450 ... 或多行粘贴"></textarea>
+    </div>
+
+    <button id="calculateBtn">批量计算并生成上样配方</button>
+
+    <div class="results" id="results">
+        <h2>计算结果</h2>
+        <div class="results-placeholder">💧💉🧪</div>
+        <p>请粘贴数据并点击计算按钮。</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('calculateBtn').addEventListener('click', calculateBCA);
+    });
+
+    /**
+     * 核心计算逻辑：最小二乘法线性回归
+     */
+    function linearRegression(X, Y) {
+        const n = X.length;
+        if (n !== Y.length || n < 2) {
+            return null;
+        }
+
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+        for (let i = 0; i < n; i++) {
+            sumX += X[i];
+            sumY += Y[i];
+            sumXY += X[i] * Y[i];
+            sumXX += X[i] * X[i];
+        }
+
+        const avgX = sumX / n;
+        const avgY = sumY / n;
+
+        // 斜率 (m)
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        
+        // 截距 (b)
+        const intercept = avgY - slope * avgX;
+
+        // R^2 (用于评估拟合优度)
+        let ssTotal = 0;
+        let ssResidual = 0;
+        for (let i = 0; i < n; i++) {
+            const predictedY = slope * X[i] + intercept;
+            ssTotal += (Y[i] - avgY) ** 2;
+            ssResidual += (Y[i] - predictedY) ** 2;
+        }
+        const rSquared = 1 - (ssResidual / ssTotal);
+
+        return { slope, intercept, rSquared };
+    }
+
+    /**
+     * 增强的文本解析函数：支持逗号、空格或换行分隔
+     */
+    function parseValues(text) {
+        return text.replace(/[\s,]+/g, ' ') 
+            .trim()
+            .split(' ')
+            .map(line => parseFloat(line))
+            .filter(n => !isNaN(n) && n !== ''); 
+    }
+
+
+    // 主计算函数
+    function calculateBCA() {
+        const standardConcStr = document.getElementById('standardConcs').textContent.trim();
+        const standardOdText = document.getElementById('standardOdTextarea').value;
+        const sampleOdText = document.getElementById('sampleOdTextarea').value;
+        
+        const dilutionFactor = parseFloat(document.getElementById('dilutionFactor').value) || 1;
+        const targetLoadAmount_ug = parseFloat(document.getElementById('targetLoadAmount').value);
+        
+        const proteinRecipeVolume_uL = parseFloat(document.getElementById('proteinRecipeVolume').value); // V_protein_recipe
+        const lbRecipeVolume_uL = parseFloat(document.getElementById('lbRecipeVolume').value); // V_LB_recipe
+
+
+        if (isNaN(targetLoadAmount_ug) || targetLoadAmount_ug <= 0) {
+            alert('请输入有效的目标上样量 (μg)。');
+            return;
+        }
+        if (isNaN(proteinRecipeVolume_uL) || proteinRecipeVolume_uL <= 0 || isNaN(lbRecipeVolume_uL) || lbRecipeVolume_uL < 0) {
+            alert('请输入有效的蛋白配方体积和 Loading Buffer 体积。');
+            return;
+        }
+
+        const totalRecipeVolume_uL = proteinRecipeVolume_uL + lbRecipeVolume_uL;
+        const dilutionRatio = proteinRecipeVolume_uL / totalRecipeVolume_uL; // D = V_protein / V_total
+
+        
+        // 预设浓度 (X轴数据)
+        const X_concs = standardConcStr.split(',').map(s => parseFloat(s.trim()));
+        
+        // 提取并清理标准曲线 OD 值 (Y轴数据)
+        const Y_ods = parseValues(standardOdText);
+
+        if (Y_ods.length !== X_concs.length) {
+            alert(`标准曲线 OD 值数量错误。需要 ${X_concs.length} 个 OD 值，但您粘贴了 ${Y_ods.length} 个有效值。`);
+            return;
+        }
+        if (Y_ods.length < 2) {
+             alert('标准曲线 OD 值数量不足 2 个。');
+            return;
+        }
+
+        // 1. 进行线性回归计算
+        const regression = linearRegression(X_concs, Y_ods);
+        if (!regression) {
+            alert('标准曲线数据拟合失败，请确保至少有两组有效的 OD 值。');
+            return;
+        }
+
+        const { slope, intercept, rSquared } = regression;
+        
+        if (Math.abs(slope) < 1e-6) {
+            alert('计算得到的斜率 m 接近零，无法进行有效计算。');
+            return;
+        }
+
+        // 确定 OD 值的有效范围
+        const minOd = Math.min(...Y_ods);
+        const maxOd = Math.max(...Y_ods);
+        
+        // 2. 提取并清理待测样品 OD 值
+        const sampleOds = parseValues(sampleOdText);
+
+        if (sampleOds.length === 0) {
+            alert('请在待测样品 OD 文本框中粘贴 OD 值。');
+            return;
+        }
+        
+        // 3. 批量计算结果
+        const results = sampleOds.map((od, index) => {
+            // C1 (实际浓度) = C_uncorrected * 稀释倍数 (mg/mL)
+            const uncorrectedConc_mg_ml = (od - intercept) / slope; // mg/mL
+            const C1_mg_ml = uncorrectedConc_mg_ml * dilutionFactor; // C1 (实际浓度)
+
+            // C2 (稀释后浓度) = C1 * D (mg/mL)
+            const C2_mg_ml = C1_mg_ml * dilutionRatio; 
+            
+            let V_final_uL = NaN;
+            let V_protein_needed_uL = NaN;
+            let V_lb_needed_uL = NaN;
+
+            if (C2_mg_ml > 0) {
+                // 1 mg/mL = 1 ug/uL
+                // V_final (总混合体积) = 目标上样量 (ug) / C2 (ug/uL)
+                V_final_uL = targetLoadAmount_ug / C2_mg_ml; 
+                
+                // V_protein_needed = V_final * D
+                V_protein_needed_uL = V_final_uL * dilutionRatio;
+
+                // V_lb_needed = V_final - V_protein_needed
+                V_lb_needed_uL = V_final_uL - V_protein_needed_uL;
+
+            } else {
+                 V_final_uL = NaN;
+            }
+            
+            let warning = '';
+            if (od < minOd || od > maxOd) {
+                warning = `(外推)`;
+            }
+            
+            return {
+                sampleIndex: index + 1,
+                od: od,
+                C1_mg_ml: C1_mg_ml,
+                C2_mg_ml: C2_mg_ml,
+                V_final_uL: V_final_uL,
+                V_protein_needed_uL: V_protein_needed_uL,
+                V_lb_needed_uL: V_lb_needed_uL,
+                warning: warning
+            };
+        });
+
+        // 4. 显示结果
+        const resultsDiv = document.getElementById('results');
+        
+        // 创建表格 HTML
+        let tableHtml = `
+            <h2>计算结果</h2>
+            <div class="results-placeholder">💧💉🧪</div>
+            <h3>拟合结果</h3>
+            <p class="r-squared">线性回归方程: OD = ${slope.toFixed(4)} * 浓度(mg/mL) + ${intercept.toFixed(4)}</p>
+            <p class="r-squared">相关系数 R²: <strong>${rSquared.toFixed(4)}</strong> ${rSquared < 0.99 ? '<span class="warning">(R²较低!)</span>' : ''}</p>
+            <hr>
+            <h3>样品上样配方 (稀释倍数: ${dilutionFactor} | 目标上样量: ${targetLoadAmount_ug} μg)</h3>
+            <p><strong>上样配方比例:</strong> ${proteinRecipeVolume_uL} μL 蛋白 : ${lbRecipeVolume_uL} μL LB (稀释系数D=${dilutionRatio.toFixed(3)})</p>
+            <table id="sampleResultsTable">
+                <thead>
+                    <tr>
+                        <th>样品编号</th>
+                        <th>C1 (实际浓度, mg/mL)</th>
+                        <th>C2 (稀释后浓度, mg/mL)</th>
+                        <th>所需蛋白体积 (μL)</th>
+                        <th>所需 Loading Buffer (μL)</th>
+                        <th>总混合体积 (μL)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        results.forEach(item => {
+            const concColor = item.warning.includes('外推') ? 'class="warning"' : '';
+            
+            // --- 核心修改在这里：toFixed(1) ---
+            const V_p_display = isNaN(item.V_protein_needed_uL) || item.V_protein_needed_uL < 0 ? '浓度无效' : item.V_protein_needed_uL.toFixed(1);
+            const V_lb_display = isNaN(item.V_lb_needed_uL) || item.V_lb_needed_uL < 0 ? '-' : item.V_lb_needed_uL.toFixed(1);
+            const V_final_display = isNaN(item.V_final_uL) || item.V_final_uL < 0 ? '-' : item.V_final_uL.toFixed(1);
+            
+            // 警告：如果所需体积过大（例如超过 50 μL），则标红
+            const V_warning = item.V_final_uL > 50 ? 'class="warning"' : '';
+
+            tableHtml += `
+                <tr>
+                    <td>样品 ${item.sampleIndex}</td>
+                    <td ${concColor}>
+                        <strong>${item.C1_mg_ml.toFixed(4)}</strong>
+                        ${item.warning.includes('外推') ? `<br><small class="warning">${item.warning}</small>` : ''}
+                    </td>
+                    <td>
+                        <strong>${item.C2_mg_ml.toFixed(4)}</strong>
+                    </td>
+                    <td ${V_warning}>
+                        <strong>${V_p_display}</strong>
+                    </td>
+                    <td ${V_warning}>
+                        <strong>${V_lb_display}</strong>
+                    </td>
+                    <td ${V_warning}>
+                        <strong>${V_final_display}</strong>
+                        ${item.V_final_uL > 50 ? `<br><small class="warning">(体积过大)</small>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `
+                </tbody>
+            </table>
+            <p style="margin-top:15px;"><small>注意：'C1 (实际浓度)' 是样品原始浓度。'C2 (稀释后浓度)' 是 ${proteinRecipeVolume_uL} μL 蛋白加入 ${lbRecipeVolume_uL} μL Loading Buffer 后的蛋白浓度。最后三列体积（μL）是您需要吸取进行上样的配方。</small></p>
+        `;
+
+        resultsDiv.innerHTML = tableHtml;
+    }
+</script>
+
+</body>
+</html>
